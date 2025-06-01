@@ -5,6 +5,10 @@ import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import LandingPage from "./pages/LandingPage";
+import CreateTempChatPage from "./pages/CreateTempChatPage";
+import JoinTempChatPage from "./pages/JoinTempChatPage";
+import TempChatPage from "./pages/TempChatPage";
 
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
@@ -35,14 +39,46 @@ const App = () => {
 
   return (
     <div data-theme={theme}>
-      <Navbar />
-
       <Routes>
-        <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
-        <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
-        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
+        {/* Landing page - always accessible */}
+        <Route path="/welcome" element={<LandingPage />} />
+        
+        {/* Temporary chat routes - no auth required */}
+        <Route path="/create-temp-chat" element={<CreateTempChatPage />} />
+        <Route path="/join/:sessionId" element={<JoinTempChatPage />} />
+        <Route path="/temp-chat/:sessionId" element={<TempChatPage />} />
+        
+        {/* Regular app routes */}
+        <Route path="/" element={
+          <>
+            <Navbar />
+            {authUser ? <HomePage /> : <Navigate to="/welcome" />}
+          </>
+        } />
+        <Route path="/signup" element={
+          <>
+            <Navbar />
+            {!authUser ? <SignUpPage /> : <Navigate to="/" />}
+          </>
+        } />
+        <Route path="/login" element={
+          <>
+            <Navbar />
+            {!authUser ? <LoginPage /> : <Navigate to="/" />}
+          </>
+        } />
+        <Route path="/settings" element={
+          <>
+            <Navbar />
+            <SettingsPage />
+          </>
+        } />
+        <Route path="/profile" element={
+          <>
+            <Navbar />
+            {authUser ? <ProfilePage /> : <Navigate to="/login" />}
+          </>
+        } />
       </Routes>
 
       <Toaster />
