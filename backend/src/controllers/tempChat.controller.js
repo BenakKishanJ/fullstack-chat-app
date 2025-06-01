@@ -20,9 +20,15 @@ export const createTempChat = async (req, res) => {
 
     await tempSession.save();
 
+    // Dynamically determine the frontend URL
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers.host;
+    const frontendUrl = process.env.FRONTEND_URL || 
+                       (process.env.NODE_ENV === 'production' ? `${protocol}://${host}` : 'http://localhost:5173');
+
     res.status(201).json({
       sessionId,
-      shareLink: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/join/${sessionId}`,
+      shareLink: `${frontendUrl}/join/${sessionId}`,
       creatorName: creatorName.trim(),
     });
   } catch (error) {

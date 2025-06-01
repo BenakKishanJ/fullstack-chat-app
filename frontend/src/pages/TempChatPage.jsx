@@ -8,10 +8,10 @@ const TempChatPage = () => {
   const { sessionId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   const userType = searchParams.get("type"); // "creator" or "participant"
   const userName = searchParams.get("name");
-  
+
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [socket, setSocket] = useState(null);
@@ -20,7 +20,7 @@ const TempChatPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sessionError, setSessionError] = useState("");
   const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
-  
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -47,7 +47,7 @@ const TempChatPage = () => {
       // First, get session info and messages
       const [sessionResponse, messagesResponse] = await Promise.all([
         fetch(`/api/temp-chat/session/${sessionId}`),
-        fetch(`/api/temp-chat/messages/${sessionId}`)
+        fetch(`/api/temp-chat/messages/${sessionId}`),
       ]);
 
       const sessionData = await sessionResponse.json();
@@ -64,18 +64,25 @@ const TempChatPage = () => {
       }
 
       // Set other user info
-      const otherUserName = userType === "creator" 
-        ? sessionData.participantName 
-        : sessionData.creatorName;
-      
+      const otherUserName =
+        userType === "creator"
+          ? sessionData.participantName
+          : sessionData.creatorName;
+
       setOtherUser(otherUserName);
 
       // Initialize socket connection
-      const newSocket = io("http://localhost:5001", {
+      const isProduction = window.location.hostname !== "localhost" && 
+                          window.location.hostname !== "127.0.0.1" && 
+                          !window.location.hostname.includes("5173") &&
+                          !window.location.hostname.includes("5174");
+      const socketUrl = isProduction ? window.location.origin : "http://localhost:5001";
+
+      const newSocket = io(socketUrl, {
         query: {
           sessionId,
           userType,
-        }
+        },
       });
 
       newSocket.on("connect", () => {
@@ -104,7 +111,7 @@ const TempChatPage = () => {
       });
 
       newSocket.on("newTempMessage", (message) => {
-        setMessages(prev => [...prev, message]);
+        setMessages((prev) => [...prev, message]);
       });
 
       newSocket.on("chatSessionEnded", () => {
@@ -118,7 +125,6 @@ const TempChatPage = () => {
       });
 
       setSocket(newSocket);
-
     } catch (error) {
       console.error("Error initializing chat:", error);
       setSessionError("Failed to load chat");
@@ -132,7 +138,7 @@ const TempChatPage = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
+
     if (!newMessage.trim() || !socket) return;
 
     try {
@@ -150,7 +156,7 @@ const TempChatPage = () => {
 
       if (response.ok) {
         const sentMessage = await response.json();
-        setMessages(prev => [...prev, sentMessage]);
+        setMessages((prev) => [...prev, sentMessage]);
         setNewMessage("");
       } else {
         const errorData = await response.json();
@@ -163,7 +169,11 @@ const TempChatPage = () => {
   };
 
   const handleLeaveChat = async () => {
-    if (window.confirm("Are you sure you want to leave? This will end the chat session for both users.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to leave? This will end the chat session for both users.",
+      )
+    ) {
       try {
         await fetch(`/api/temp-chat/leave/${sessionId}`, {
           method: "POST",
@@ -176,7 +186,7 @@ const TempChatPage = () => {
         if (socket) {
           socket.disconnect();
         }
-        
+
         toast.success("Left chat session");
         navigate("/");
       } catch (error) {
@@ -187,9 +197,9 @@ const TempChatPage = () => {
   };
 
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -211,10 +221,7 @@ const TempChatPage = () => {
           <AlertCircle className="w-16 h-16 text-error mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Chat Session Error</h2>
           <p className="text-base-content/70 mb-6">{sessionError}</p>
-          <button 
-            onClick={() => navigate("/")}
-            className="btn btn-primary"
-          >
+          <button onClick={() => navigate("/")} className="btn btn-primary">
             Go Home
           </button>
         </div>
@@ -230,7 +237,9 @@ const TempChatPage = () => {
           <div className="flex items-center gap-3">
             <div className="avatar placeholder">
               <div className="bg-primary text-primary-content rounded-full w-10">
-                <span className="text-sm">{otherUser ? otherUser[0].toUpperCase() : "?"}</span>
+                <span className="text-sm">
+                  {otherUser ? otherUser[0].toUpperCase() : "?"}
+                </span>
               </div>
             </div>
             <div>
@@ -238,20 +247,19 @@ const TempChatPage = () => {
                 {otherUser || "Waiting for participant..."}
               </h2>
               <div className="flex items-center gap-2 text-sm">
-                <div className={`w-2 h-2 rounded-full ${isOtherUserOnline ? "bg-success" : "bg-error"}`}></div>
+                <div
+                  className={`w-2 h-2 rounded-full ${isOtherUserOnline ? "bg-success" : "bg-error"}`}
+                ></div>
                 <span className="text-base-content/70">
                   {isOtherUserOnline ? "Online" : "Offline"}
                 </span>
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <div className="badge badge-warning badge-sm">Temporary Chat</div>
-            <button
-              onClick={handleLeaveChat}
-              className="btn btn-error btn-sm"
-            >
+            <button onClick={handleLeaveChat} className="btn btn-error btn-sm">
               <LogOut className="w-4 h-4" />
               Leave
             </button>
@@ -287,13 +295,17 @@ const TempChatPage = () => {
                         {!isOwnMessage && (
                           <div className="avatar placeholder">
                             <div className="bg-neutral text-neutral-content rounded-full w-6">
-                              <span className="text-xs">{message.senderName[0].toUpperCase()}</span>
+                              <span className="text-xs">
+                                {message.senderName[0].toUpperCase()}
+                              </span>
                             </div>
                           </div>
                         )}
                         <div className="flex-1">
                           {!isOwnMessage && (
-                            <div className="text-xs opacity-70 mb-1">{message.senderName}</div>
+                            <div className="text-xs opacity-70 mb-1">
+                              {message.senderName}
+                            </div>
                           )}
                           {message.image && (
                             <img
@@ -305,7 +317,9 @@ const TempChatPage = () => {
                           {message.text && (
                             <p className="text-sm">{message.text}</p>
                           )}
-                          <div className={`text-xs mt-1 opacity-70 ${isOwnMessage ? "text-right" : ""}`}>
+                          <div
+                            className={`text-xs mt-1 opacity-70 ${isOwnMessage ? "text-right" : ""}`}
+                          >
                             {formatTime(message.timestamp)}
                           </div>
                         </div>
